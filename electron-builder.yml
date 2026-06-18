@@ -6,7 +6,9 @@ mac:
 files:
   - electron/**/*
   - frontend/**/*
-  - backend/**/*
 extraResources:
   - from: backend
     to: backend
+    filter:
+      - "**/*"
+      - "!venv/**"

@@ -1,5 +1,9 @@
 node_modules/
 backend/venv/
 dist/
+out/
 .DS_Store
 *.log
+__pycache__/
+*.pyc
+*.pyo
