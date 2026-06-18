@@ -1,0 +1,12 @@
+appId: com.football.goalclipper
+productName: Football Goal Clipper
+mac:
+  category: public.app-category.video
+  target: dmg
+files:
+  - electron/**/*
+  - frontend/**/*
+  - backend/**/*
+extraResources:
+  - from: backend
+    to: backend

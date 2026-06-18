@@ -1,0 +1,14 @@
+{
+  "name": "football-goal-clipper",
+  "version": "1.0.0",
+  "description": "Football goal highlight clipper for training videos",
+  "main": "electron/main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0"
+  }
+}
