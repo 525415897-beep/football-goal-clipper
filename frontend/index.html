@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Football Goal Clipper</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+    <header id="toolbar">
+      <button id="btn-open">打开视频</button>
+      <button id="btn-set-roi-left" disabled>框选左侧球门</button>
+      <button id="btn-set-roi-right" disabled>框选右侧球门</button>
+      <button id="btn-detect" disabled>检测进球</button>
+      <span id="status"></span>
+    </header>
+
+    <main id="main-area">
+      <div id="player-container">
+        <video id="video-player" controls disablePictureInPicture></video>
+        <canvas id="roi-overlay"></canvas>
+      </div>
+
+      <aside id="sidebar">
+        <h3>候选时间点</h3>
+        <ul id="timestamp-list"></ul>
+        <div id="sidebar-actions">
+          <button id="btn-add-manual" disabled>手动添加当前时间</button>
+          <button id="btn-export" disabled>导出片段</button>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <script src="player.js"></script>
+</body>
+</html>
