@@ -1,9 +1,10 @@
 // electron/main.js
 const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
-const { spawn } = require('child_process');
+const { spawn, execSync } = require('child_process');
 
 let mainWindow;
+let cachedPythonPath = null;
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -20,11 +21,51 @@ function createWindow() {
 }
 
 function getPythonPath() {
-  const isPackaged = app.isPackaged;
-  if (isPackaged) {
-    return path.join(process.resourcesPath, 'backend', 'venv', 'bin', 'python3');
+  // Return cached path if already resolved
+  if (cachedPythonPath) {
+    return cachedPythonPath;
   }
-  return path.join(__dirname, '..', 'backend', 'venv', 'bin', 'python3');
+
+  const isPackaged = app.isPackaged;
+
+  if (!isPackaged) {
+    // Development: use the project venv
+    cachedPythonPath = path.join(__dirname, '..', 'backend', 'venv', 'bin', 'python3');
+    return cachedPythonPath;
+  }
+
+  // Packaged app: no venv bundled, find system Python
+  // Try python3 from PATH first
+  try {
+    const pythonFromPath = execSync('which python3', { encoding: 'utf-8' }).trim();
+    if (pythonFromPath) {
+      cachedPythonPath = pythonFromPath;
+      return cachedPythonPath;
+    }
+  } catch (_) {
+    // which failed, try fallback
+  }
+
+  // Fallback: check /usr/bin/python3
+  const fallbackPath = '/usr/bin/python3';
+  try {
+    execSync(`test -x "${fallbackPath}"`);
+    cachedPythonPath = fallbackPath;
+    return cachedPythonPath;
+  } catch (_) {
+    // fallback not available either
+  }
+
+  // No Python found at all
+  dialog.showErrorBox(
+    'Python Not Found',
+    'Python 3 is required to run this application.\n\n' +
+    'Please install Python 3 from https://www.python.org/downloads/ ' +
+    'or via Homebrew: brew install python3\n\n' +
+    'Make sure python3 is available on your system PATH.'
+  );
+  app.quit();
+  return 'python3'; // unreachable, satisfies return type
 }
 
 function getBackendPath() {
@@ -33,6 +74,26 @@ function getBackendPath() {
     return path.join(process.resourcesPath, 'backend');
   }
   return path.join(__dirname, '..', 'backend');
+}
+
+function checkPythonDeps() {
+  const requiredModules = ['cv2', 'numpy'];
+  try {
+    execSync(
+      `${getPythonPath()} -c "import ${requiredModules.join(', ')}"`,
+      { encoding: 'utf-8', timeout: 15000 }
+    );
+    return true;
+  } catch (_) {
+    dialog.showErrorBox(
+      'Missing Python Dependencies',
+      'The following Python packages are required:\n\n' +
+      `  pip3 install opencv-python numpy\n\n` +
+      'Please install them using the command above in your terminal.'
+    );
+    app.quit();
+    return false;
+  }
 }
 
 function runPythonScript(scriptName, inputData) {
@@ -101,5 +162,8 @@ ipcMain.handle('select-output-dir', async () => {
   return result.canceled ? null : result.filePaths[0];
 });
 
-app.whenReady().then(createWindow);
+app.whenReady().then(() => {
+  if (!checkPythonDeps()) return;
+  createWindow();
+});
 app.on('window-all-closed', () => app.quit());
