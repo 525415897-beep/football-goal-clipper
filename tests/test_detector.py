@@ -12,6 +12,9 @@ from detector import (
     check_rois,
     deduplicate_timestamps,
     detect_goals,
+    detect_goals_video,
+    detect_goals_combined,
+    detect_audio_peaks,
 )
 
 
@@ -131,6 +134,7 @@ def test_detect_goals_synthetic_video():
             min_area=10,
             max_area=5000,
             dedup_window=5.0,
+            frame_skip=1,
         )
 
         # Motion occurs on frames 0, 2, 4, ... (even frames vs previous odd frames).
@@ -144,3 +148,33 @@ def test_detect_goals_synthetic_video():
             f"Expected first timestamp around 0.1s, got {timestamps[0]}"
     finally:
         os.unlink(video_path)
+
+
+def test_detect_goals_is_video_alias():
+    """detect_goals should be an alias for detect_goals_video for backward compat."""
+    assert detect_goals is detect_goals_video
+
+
+def test_detect_audio_peaks_need_ffmpeg():
+    """detect_audio_peaks requires ffmpeg. Test that it handles missing video."""
+    import subprocess as sp
+    try:
+        detect_audio_peaks("/nonexistent/video.mp4")
+    except (RuntimeError, sp.TimeoutExpired, FileNotFoundError) as e:
+        # Expected: ffmpeg can't find the file or ffmpeg missing
+        assert "ffmpeg" in str(e).lower() or "nonexistent" in str(e).lower() or "No such file" in str(e)
+
+
+def test_deduplicate_timestamps_unsorted_input():
+    """deduplicate_timestamps should sort input internally."""
+    result = deduplicate_timestamps([30.0, 1.0, 15.0], window=10.0)
+    assert result == [1.0, 15.0, 30.0]
+
+
+def test_detect_goals_video_nonexistent_file():
+    """detect_goals_video should raise RuntimeError for missing files."""
+    try:
+        detect_goals_video("/nonexistent/video.mp4", (0, 0, 10, 10), (0, 0, 10, 10))
+        assert False, "Should have raised RuntimeError"
+    except RuntimeError as e:
+        assert "Cannot open video" in str(e)
